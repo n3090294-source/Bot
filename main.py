@@ -5,27 +5,27 @@ from telebot import types
 # -----------------------------
 # 1️⃣ Токен и админы
 # -----------------------------
-TOKEN = os.environ.get("8559510337:AAFwfFrF45BRTE4PAausnMkvsCLLgnMsVT8")
+TOKEN = os.environ.get("BOT_TOKEN")  # токен берём из переменной окружения
 if not TOKEN:
     raise ValueError("⚠️ BOT_TOKEN не установлен в переменных окружения!")
-    
+
 ADMIN_IDS = [7303568633, 6647482475, 7572540880, 5205986826]
 
 bot = telebot.TeleBot(TOKEN)
 
 # -----------------------------
-# 2️⃣ Пользователи (баланс, предметы, валюты)
+# 2️⃣ Пользователи (баланс, предметы)
 # -----------------------------
 users = {}
 
 def get_user(uid):
     if uid not in users:
         users[uid] = {
-            "баланс": 0,
+            "деньги": 0,
             "часики": 0,
             "дрели": 0,
-            "осколки": 0,
             "карандаши": 0,
+            "осколки": 0,
             "items": [],
             "quests_done": []
         }
@@ -64,6 +64,14 @@ SHOP = {
         "Дрель вумен": {"price": {"деньги": 20000, "дрели": 15}},
         "Биг дрель": {"price": {"деньги": 8000, "дрели": 11}},
     },
+    "Карандаши": {
+        "Мелкий карандаш": {"price": {"деньги": 50, "карандаши": 1}},
+        "Большой карандаш": {"price": {"деньги": 250, "карандаши": 5}},
+    },
+    "Осколки": {
+        "Осколок Астро": {"price": {"деньги": 100, "осколки": 1}},
+        "Большой осколок": {"price": {"деньги": 500, "осколки": 5}},
+    },
     "Эксклюзивные": {
         "Три титан": {"price": {"деньги": 100000}},
         "Некромант туалет": {"price": {"деньги": 10000}},
@@ -86,19 +94,19 @@ SHOP = {
 # 4️⃣ Задания
 # -----------------------------
 QUESTS = {
-    # UTKM
+    # UTKM задания
     "UTKM_1": {"name": "Убить скибиди учёного 5 раз", "desc": "Убить скибиди учёного 5 раз за Титан Камера Мен", "reward": {"деньги": 10000}, "unlock": "UTCM"},
     "UTKM_2": {"name": "Убить Джи 2.0 10 раз", "desc": "Победить Джи версии 2.0 десять раз", "reward": {"деньги": 20000}, "unlock": "UTCM"},
     "UTKM_3": {"name": "Убить Джи 2.5 20 раз", "desc": "Убить Джи 2.5 двадцать раз", "reward": {"деньги": 30000}, "unlock": "UTCM"},
-    "UTKM_4": {"name": "Собрать осколки Астро", "desc": "Собрать все осколки Астро", "reward": {"осколки": 10}, "unlock": "UTCM"},
-    "UTKM_5": {"name": "Собрать карандаши", "desc": "Собрать все карандаши", "reward": {"карандаши": 15}, "unlock": "UTCM"},
-    
-    # UTTM
+    "UTKM_4": {"name": "Собрать карандаши", "desc": "Собрать все карандаши", "reward": {"карандаши": 5}, "unlock": "UTCM"},
+    "UTKM_5": {"name": "Собрать осколки Астро", "desc": "Собрать все осколки Астро", "reward": {"осколки": 5}, "unlock": "UTCM"},
+
+    # UTTM задания
     "UTTM_1": {"name": "Собрать всю расу ТВ", "desc": "Иметь всех ТВ менов до 67 серии", "reward": {"деньги": 50000}, "unlock": "UTTM"},
     "UTTM_2": {"name": "Быть на 80 волне за ТВ титана", "desc": "Дойти до 80 волны и выиграть за Титан ТВ", "reward": {"деньги": 75000}, "unlock": "UTTM"},
     "UTTM_3": {"name": "Убить Джи 3.0 20 раз", "desc": "Уничтожить Джи версии 3.0 двадцать раз", "reward": {"деньги": 100000}, "unlock": "UTTM"},
-    "UTTM_4": {"name": "Собрать осколки Астро", "desc": "Собрать все осколки Астро", "reward": {"осколки": 20}, "unlock": "UTTM"},
-    "UTTM_5": {"name": "Собрать карандаши", "desc": "Собрать все карандаши", "reward": {"карандаши": 25}, "unlock": "UTTM"},
+    "UTTM_4": {"name": "Собрать все клоки", "desc": "Иметь все клоки", "reward": {"часики": 10}, "unlock": "UTTM"},
+    "UTTM_5": {"name": "Собрать все дрели", "desc": "Иметь все дрели", "reward": {"дрели": 10}, "unlock": "UTTM"},
 }
 
 # -----------------------------
@@ -106,7 +114,7 @@ QUESTS = {
 # -----------------------------
 @bot.message_handler(commands=["start"])
 def start(message):
-    get_user(message.from_user.id)
+    user = get_user(message.from_user.id)
     kb = types.InlineKeyboardMarkup()
     kb.add(types.InlineKeyboardButton("💰 Баланс", callback_data="balance"))
     kb.add(types.InlineKeyboardButton("🛒 Магазин", callback_data="shop"))
@@ -119,8 +127,12 @@ def start(message):
 @bot.callback_query_handler(func=lambda c: c.data=="balance")
 def show_balance(c):
     user = get_user(c.from_user.id)
-    text = f"💰 Баланс: {user['баланс']}\n🕰 Часики: {user['часики']}\n🔩 Дрели: {user['дрели']}\n💎 Осколки: {user['осколки']}\n✏ Карандаши: {user['карандаши']}\n\n🧾 Предметы:\n"
-    text += "\n".join(user["items"]) if user["items"] else "Пусто"
+    text = f"💰 Деньги: {user['деньги']}\n"
+    text += f"⏰ Часики: {user['часики']}\n"
+    text += f"🔧 Дрели: {user['дрели']}\n"
+    text += f"✏ Карандаши: {user['карандаши']}\n"
+    text += f"💎 Осколки: {user['осколки']}\n"
+    text += "🧾 Твои предметы:\n" + "\n".join(user["items"]) if user["items"] else "Пусто"
     bot.answer_callback_query(c.id)
     bot.send_message(c.message.chat.id, text)
 
@@ -140,9 +152,8 @@ def shop_section(c):
     section_name = c.data.replace("shop_", "")
     kb = types.InlineKeyboardMarkup()
     for item in SHOP[section_name].keys():
-        price = SHOP[section_name][item]["price"]
-        price_text = ", ".join([f"{k}: {v}" for k, v in price.items()])
-        kb.add(types.InlineKeyboardButton(f"{item} - {price_text}", callback_data=f"buy_{item}"))
+        price = ", ".join([f"{k}: {v}" for k, v in SHOP[section_name][item]['price'].items()])
+        kb.add(types.InlineKeyboardButton(f"{item} - {price}", callback_data=f"buy_{item}"))
     kb.add(types.InlineKeyboardButton("⬅ Назад", callback_data="shop"))
     bot.answer_callback_query(c.id)
     bot.send_message(c.message.chat.id, f"Раздел: {section_name}", reply_markup=kb)
@@ -154,19 +165,20 @@ def buy_item(c):
     price = None
     for section in SHOP.values():
         if item_name in section:
-            price = section[item_name]["price"]
-    if price is None:
+            price = section[item_name]['price']
+    if not price:
         bot.answer_callback_query(c.id, "Ошибка покупки")
         return
-    # проверяем все валюты
-    can_buy = all(user.get(k,0) >= v for k,v in price.items())
-    if can_buy:
-        for k,v in price.items():
-            user[k] -= v
-        user["items"].append(item_name)
-        bot.answer_callback_query(c.id, f"✅ Куплено {item_name}")
-    else:
-        bot.answer_callback_query(c.id, "❌ Недостаточно ресурсов")
+    # проверка всех валют
+    for key, value in price.items():
+        if user.get(key, 0) < value:
+            bot.answer_callback_query(c.id, f"❌ Недостаточно {key}")
+            return
+    # списание
+    for key, value in price.items():
+        user[key] -= value
+    user["items"].append(item_name)
+    bot.answer_callback_query(c.id, f"✅ Куплено {item_name}")
 
 # -----------------------------
 # 8️⃣ Задания
@@ -175,7 +187,7 @@ def buy_item(c):
 def quests_menu(c):
     kb = types.InlineKeyboardMarkup()
     for qid in QUESTS.keys():
-        kb.add(types.InlineKeyboardButton(QUESTS[qid]["name"], callback_data=f"quest_{qid}"))
+        kb.add(types.InlineKeyboardButton(QUESTS[qid]['name'], callback_data=f"quest_{qid}"))
     bot.answer_callback_query(c.id)
     bot.send_message(c.message.chat.id, "Выберите задание:", reply_markup=kb)
 
@@ -184,7 +196,7 @@ def quest_info(c):
     qid = c.data.replace("quest_", "")
     q = QUESTS[qid]
     text = f"📜 {q['name']}\n\n{q['desc']}\n\n🎁 Награда:\n"
-    for k,v in q["reward"].items():
+    for k, v in q["reward"].items():
         text += f"{k}: {v}\n"
     text += f"\n🔓 Открывает персонажа: {q['unlock']}"
     bot.answer_callback_query(c.id)
@@ -201,6 +213,26 @@ def admin_panel(message):
     kb = types.InlineKeyboardMarkup()
     kb.add(types.InlineKeyboardButton("💰 Начислить валюту", callback_data="admin_add_currency"))
     bot.send_message(message.chat.id, "Админ панель:", reply_markup=kb)
+
+@bot.callback_query_handler(func=lambda c: c.data=="admin_add_currency")
+def admin_add_currency(c):
+    bot.answer_callback_query(c.id, "Используйте команду /addcurrency user_id валюта сумма")
+
+@bot.message_handler(commands=["addcurrency"])
+def add_currency_cmd(message):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+    try:
+        _, uid, currency, amount = message.text.split()
+        uid, amount = int(uid), int(amount)
+        user = get_user(uid)
+        if currency not in user:
+            bot.send_message(message.chat.id, f"❌ Валюта {currency} не найдена")
+            return
+        user[currency] += amount
+        bot.send_message(message.chat.id, f"✅ Добавлено {amount} {currency} пользователю {uid}")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"❌ Ошибка: {e}")
 
 # -----------------------------
 # 10️⃣ Запуск
