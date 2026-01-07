@@ -4,20 +4,24 @@ from telebot import types
 # -----------------------------
 # 1️⃣ Токен и админы
 # -----------------------------
-TOKEN = "ВАШ_ТОКЕН_СЮДА"
+TOKEN = "ВАШ_ТОКЕН_ЗДЕСЬ"
 ADMIN_IDS = [7303568633, 6647482475, 7572540880, 5205986826]
 
 bot = telebot.TeleBot(TOKEN)
 
 # -----------------------------
-# 2️⃣ Пользователи
+# 2️⃣ Пользователи (баланс, предметы)
 # -----------------------------
 users = {}
 
 def get_user(uid):
     if uid not in users:
         users[uid] = {
-            "баланс": {"деньги": 0, "часики": 0, "дрели": 0, "осколки": 0, "карандаши": 0},
+            "баланс": 0,
+            "часики": 0,
+            "дрели": 0,
+            "осколки": 0,
+            "карандаши": 0,
             "items": [],
             "quests_done": []
         }
@@ -57,9 +61,9 @@ SHOP = {
         "Биг дрель": {"price": {"деньги": 8000, "дрели": 11}},
     },
     "Эксклюзивные": {
-        "Три титан": {"price": {"деньги": 100000, "осколки": 10}},
-        "Некромант туалет": {"price": {"деньги": 10000, "карандаши": 5}},
-        "Годжо камерамен": {"price": {"деньги": 10000, "осколки": 3}},
+        "Три титан": {"price": {"деньги": 100000}},
+        "Некромант туалет": {"price": {"деньги": 10000}},
+        "Годжо камерамен": {"price": {"деньги": 10000}},
     },
     "Титаны": {
         "Титан Камера 1.0": {"price": {"деньги": 5000}},
@@ -75,9 +79,10 @@ SHOP = {
 }
 
 # -----------------------------
-# 4️⃣ Задания
+# 4️⃣ Задания (UTKM и UTTM)
 # -----------------------------
 QUESTS = {
+    # ======== UТKM ========
     "UTKM_1": {
         "name": "Убить скибиди учёного 5 раз",
         "desc": "Убить скибиди учёного 5 раз за Титан Камера Мен",
@@ -96,6 +101,20 @@ QUESTS = {
         "reward": {"деньги": 30000},
         "unlock": "UTCM"
     },
+    "UTKM_4": {
+        "name": "Собрать 10 осколков",
+        "desc": "Найди и собери 10 осколков",
+        "reward": {"осколки": 10},
+        "unlock": "UTCM"
+    },
+    "UTKM_5": {
+        "name": "Собрать 5 карандашей",
+        "desc": "Найди и собери 5 карандашей",
+        "reward": {"карандаши": 5},
+        "unlock": "UTCM"
+    },
+
+    # ======== UТTM ========
     "UTTM_1": {
         "name": "Собрать всю расу ТВ",
         "desc": "Иметь всех ТВ менов до 67 серии",
@@ -114,23 +133,22 @@ QUESTS = {
         "reward": {"деньги": 100000},
         "unlock": "UTTM"
     },
-    # пример для осколков и карандашей
-    "FRAG_1": {
-        "name": "Собрать 10 осколков",
-        "desc": "Найди и собери 10 осколков",
-        "reward": {"осколки": 10},
-        "unlock": None
+    "UTTM_4": {
+        "name": "Собрать 20 осколков",
+        "desc": "Найди и собери 20 осколков",
+        "reward": {"осколки": 20},
+        "unlock": "UTTM"
     },
-    "PENCIL_1": {
-        "name": "Собрать 5 карандашей",
-        "desc": "Найди и собери 5 карандашей",
-        "reward": {"карандаши": 5},
-        "unlock": None
+    "UTTM_5": {
+        "name": "Собрать 10 карандашей",
+        "desc": "Найди и собери 10 карандашей",
+        "reward": {"карандаши": 10},
+        "unlock": "UTTM"
     }
 }
 
 # -----------------------------
-# 5️⃣ Команды / старт
+# 5️⃣ Команды
 # -----------------------------
 @bot.message_handler(commands=["start"])
 def start(message):
@@ -139,7 +157,7 @@ def start(message):
     kb.add(types.InlineKeyboardButton("💰 Баланс", callback_data="balance"))
     kb.add(types.InlineKeyboardButton("🛒 Магазин", callback_data="shop"))
     kb.add(types.InlineKeyboardButton("📜 Задания", callback_data="quests"))
-    kb.add(types.InlineKeyboardButton("🛠 Админ", callback_data="admin_panel"))
+    kb.add(types.InlineKeyboardButton("⚙️ Админ-панель", callback_data="admin_panel"))
     bot.send_message(message.chat.id, "Привет! Выбирай ниже:", reply_markup=kb)
 
 # -----------------------------
@@ -148,10 +166,8 @@ def start(message):
 @bot.callback_query_handler(func=lambda c: c.data=="balance")
 def show_balance(c):
     user = get_user(c.from_user.id)
-    text = "💰 Твой баланс:\n"
-    for cur, val in user["баланс"].items():
-        text += f"{cur}: {val}\n"
-    text += "\n🧾 Твои предметы:\n" + ("\n".join(user["items"]) if user["items"] else "Пусто")
+    text = f"💰 Деньги: {user['баланс']}\n⏱ Часики: {user['часики']}\n🛠 Дрели: {user['дрели']}\n💎 Осколки: {user['осколки']}\n✏ Карандаши: {user['карандаши']}\n"
+    text += "🧾 Твои предметы:\n" + "\n".join(user["items"]) if user["items"] else "Пусто"
     bot.answer_callback_query(c.id)
     bot.send_message(c.message.chat.id, text)
 
@@ -170,8 +186,8 @@ def shop_menu(c):
 def shop_section(c):
     section_name = c.data.replace("shop_", "")
     kb = types.InlineKeyboardMarkup()
-    for item, data in SHOP[section_name].items():
-        price_text = ", ".join([f"{k}: {v}" for k, v in data["price"].items()])
+    for item in SHOP[section_name].keys():
+        price_text = ", ".join(f"{v} {k}" for k, v in SHOP[section_name][item]['price'].items())
         kb.add(types.InlineKeyboardButton(f"{item} - {price_text}", callback_data=f"buy_{item}"))
     kb.add(types.InlineKeyboardButton("⬅ Назад", callback_data="shop"))
     bot.answer_callback_query(c.id)
@@ -184,18 +200,24 @@ def buy_item(c):
     price = None
     for section in SHOP.values():
         if item_name in section:
-            price = section[item_name]["price"]
+            price = section[item_name]['price']
     if not price:
         bot.answer_callback_query(c.id, "Ошибка покупки")
         return
-    for cur, val in price.items():
-        if user["баланс"].get(cur, 0) < val:
-            bot.answer_callback_query(c.id, f"❌ Недостаточно {cur}")
-            return
-    for cur, val in price.items():
-        user["баланс"][cur] -= val
-    user["items"].append(item_name)
-    bot.answer_callback_query(c.id, f"✅ Куплено {item_name}")
+
+    can_buy = True
+    for cur, amount in price.items():
+        if user.get(cur, 0) < amount:
+            can_buy = False
+            break
+
+    if can_buy:
+        for cur, amount in price.items():
+            user[cur] -= amount
+        user["items"].append(item_name)
+        bot.answer_callback_query(c.id, f"✅ Куплено {item_name}")
+    else:
+        bot.answer_callback_query(c.id, "❌ Недостаточно средств")
 
 # -----------------------------
 # 8️⃣ Задания
@@ -203,10 +225,22 @@ def buy_item(c):
 @bot.callback_query_handler(func=lambda c: c.data=="quests")
 def quests_menu(c):
     kb = types.InlineKeyboardMarkup()
-    for qid, q in QUESTS.items():
-        kb.add(types.InlineKeyboardButton(q["name"], callback_data=f"quest_{qid}"))
+    # выводим по разделам
+    kb.add(types.InlineKeyboardButton("UTKM", callback_data="quests_UTKM"))
+    kb.add(types.InlineKeyboardButton("UTTM", callback_data="quests_UTTM"))
     bot.answer_callback_query(c.id)
-    bot.send_message(c.message.chat.id, "Выберите задание:", reply_markup=kb)
+    bot.send_message(c.message.chat.id, "Выберите раздел заданий:", reply_markup=kb)
+
+@bot.callback_query_handler(func=lambda c: c.data.startswith("quests_"))
+def quest_section(c):
+    section = c.data.replace("quests_", "")
+    kb = types.InlineKeyboardMarkup()
+    for qid, q in QUESTS.items():
+        if section in qid:
+            kb.add(types.InlineKeyboardButton(q["name"], callback_data=f"quest_{qid}"))
+    kb.add(types.InlineKeyboardButton("⬅ Назад", callback_data="quests"))
+    bot.answer_callback_query(c.id)
+    bot.send_message(c.message.chat.id, f"Задания раздела {section}:", reply_markup=kb)
 
 @bot.callback_query_handler(func=lambda c: c.data.startswith("quest_"))
 def quest_info(c):
@@ -215,7 +249,7 @@ def quest_info(c):
     text = f"📜 {q['name']}\n\n{q['desc']}\n\n🎁 Награда:\n"
     for k, v in q["reward"].items():
         text += f"{k}: {v}\n"
-    text += f"\n🔓 Открывает персонажа: {q['unlock']}" if q['unlock'] else ""
+    text += f"\n🔓 Открывает персонажа: {q['unlock']}"
     bot.answer_callback_query(c.id)
     bot.send_message(c.message.chat.id, text)
 
@@ -225,15 +259,28 @@ def quest_info(c):
 @bot.callback_query_handler(func=lambda c: c.data=="admin_panel")
 def admin_panel(c):
     if c.from_user.id not in ADMIN_IDS:
-        bot.answer_callback_query(c.id, "❌ Нет доступа")
+        bot.answer_callback_query(c.id, "❌ У вас нет доступа")
         return
     kb = types.InlineKeyboardMarkup()
     kb.add(types.InlineKeyboardButton("💰 Начислить валюту", callback_data="admin_add_currency"))
-    kb.add(types.InlineKeyboardButton("💸 Установить валюту", callback_data="admin_set_currency"))
+    kb.add(types.InlineKeyboardButton("✅ Подтвердить задание", callback_data="admin_complete_quest"))
     bot.answer_callback_query(c.id)
     bot.send_message(c.message.chat.id, "Админ панель:", reply_markup=kb)
 
 # -----------------------------
-# 10️⃣ Запуск
+# 10️⃣ Функции для админа
+# -----------------------------
+def add_currency(uid, currency, amount):
+    user = get_user(uid)
+    if currency in user:
+        user[currency] += amount
+
+def set_currency(uid, currency, amount):
+    user = get_user(uid)
+    if currency in user:
+        user[currency] = amount
+
+# -----------------------------
+# 11️⃣ Запуск
 # -----------------------------
 bot.infinity_polling()
