@@ -5,7 +5,7 @@ from telebot import types
 # -----------------------------
 # 1️⃣ Токен и админы
 # -----------------------------
-TOKEN = os.environ.get("BOT_TOKEN")
+TOKEN = os.environ.get("8559510337:AAFwfFrF45BRTE4PAausnMkvsCLLgnMsVT8")
 if not TOKEN:
     raise ValueError("⚠️ BOT_TOKEN не установлен в переменных окружения!")
     
