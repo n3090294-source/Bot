@@ -4,7 +4,7 @@ from telebot import types
 # -----------------------------
 # 1️⃣ Токен и админы
 # -----------------------------
-TOKEN = "ВАШ_ТОКЕН_ЗДЕСЬ"
+TOKEN = "8559510337:AAFwfFrF45BRTE4PAausnMkvsCLLgnMsVT8"
 ADMIN_IDS = [7303568633, 6647482475, 7572540880, 5205986826]
 
 bot = telebot.TeleBot(TOKEN)
